@@ -2,10 +2,42 @@
 from ..coordinates import Coordinates
 from ..utils import countries
 from ..utils.populations import country_population
+from abc import ABCMeta, abstractmethod
 
+class Iterator(metaclass=ABCMeta):
+    @abstractmethod
+    def getNext(self): pass
+
+    @abstractmethod
+    def hasNext(self): pass
+
+class LocationInterface(metaclass=ABCMeta):
+    @abstractmethod
+    def country_code(self): pass
+
+    @abstractmethod
+    def country_population(self): pass
+
+    @abstractmethod
+    def serialize(self): pass 
+
+class LocationIterator(Iterator):
+    def __init__(self, items):
+        self.index = 0
+        self.items = items
+    
+    def getNext(self):
+        if self.index < len(self.items):
+            item = self.items[self.index]
+            self.index += 1
+        
+        return item
+
+    def hasNext(self):
+        return self.index < len(self.items)
 
 # pylint: disable=redefined-builtin,invalid-name
-class Location:  # pylint: disable=too-many-instance-attributes
+class Location(LocationInterface):  # pylint: disable=too-many-instance-attributes
     """
     A location in the world affected by the coronavirus.
     """
