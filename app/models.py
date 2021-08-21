@@ -2,9 +2,23 @@
 from typing import Dict, List
 
 from pydantic import BaseModel, validator
+from abc import ABCMeta, abstractmethod
 
+class Observer(metaclass=ABCMeta):
+    @abstractmethod
+    def update(self, confirmed, deaths, recovered): pass
 
-class Latest(BaseModel):
+class Subject(metaclass=ABCMeta):
+    @abstractmethod
+    def subscribe(self, obs): pass
+
+    @abstractmethod
+    def unsubscribe(self, obs): pass
+
+    @abstractmethod
+    def notify(self, obs): pass
+
+class Latest(BaseModel, Subject):
     """
     Latest model.
     """
@@ -12,14 +26,31 @@ class Latest(BaseModel):
     confirmed: int
     deaths: int
     recovered: int
+    subscribers = []
+    
+    def subscribe(self, obs):
+        self.subscribers.append(obs)
 
+    def unsubscribe(self, obs):
+        self.subscribers.remove(obs)
 
-class LatestResponse(BaseModel):
+    def notify(self):
+        for sub in self.subscribers:
+            sub.update(self.confirmed, self.deaths, self.recovered)
+
+class LatestResponse(BaseModel, Observer):
     """
     Response for latest.
     """
 
-    latest: Latest
+    confirmed: int
+    deaths:int
+    recovered:int
+
+    def update(self, confirmed, deaths, recovered):
+        self.confirmed = confirmed
+        self.deaths = deaths
+        self.recovered = recovered
 
 
 class Timeline(BaseModel):
@@ -58,7 +89,7 @@ class Timelines(BaseModel):
     recovered: Timeline
 
 
-class Location(BaseModel):
+class Location(BaseModel, Observer):
     """
     Location model.
     """
@@ -71,9 +102,15 @@ class Location(BaseModel):
     county: str = ""
     last_updated: str  # TODO use datetime.datetime type.
     coordinates: Dict
-    latest: Latest
+    confirmed: int
+    deaths:int
+    recovered:int
     timelines: Timelines = {}
 
+    def update(self, confirmed, deaths, recovered):
+        self.confirmed = confirmed
+        self.deaths = deaths
+        self.recovered = recovered
 
 class LocationResponse(BaseModel):
     """
@@ -88,5 +125,14 @@ class LocationsResponse(BaseModel):
     Response for locations.
     """
 
-    latest: Latest
+    confirmed:int
+    deaths:int
+    recovered:int
+    locations: List[Location] = []
+
+    def update(self, confirmed, deaths, recovered):
+        self.confirmed = confirmed
+        self.deaths = deaths
+        self.recovered = recovered
+
     locations: List[Location] = []
